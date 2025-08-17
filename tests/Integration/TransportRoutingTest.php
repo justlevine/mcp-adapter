@@ -30,18 +30,18 @@ final class TransportRoutingTest extends TestCase
     public function test_tools_and_prompts_routed_and_cursor_added(): void
     {
         $server = new McpServer(
-            server_id: 'srv',
-            server_route_namespace: 'mcp/v1',
-            server_route: '/mcp',
-            server_name: 'Srv',
-            server_description: 'desc',
-            server_version: '0.0.1',
-            mcp_transports: [DummyTransport::class],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
-            tools: ['test/always-allowed'],
-            resources: ['test/resource'],
-            prompts: ['test/prompt'],
+            'srv',
+            'mcp/v1',
+            '/mcp',
+            'Srv',
+            'desc',
+            '0.0.1',
+            [DummyTransport::class],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
+            ['test/always-allowed'],
+            ['test/resource'],
+            ['test/prompt'],
         );
 
         // Create transport with proper context
@@ -67,14 +67,14 @@ final class TransportRoutingTest extends TestCase
 
         // Create context for the router first (without router to avoid circular dependency)
         $router_context = new McpTransportContext(
-            mcp_server: $server,
-            initialize_handler: $initialize_handler,
-            tools_handler: $tools_handler,
-            resources_handler: $resources_handler,
-            prompts_handler: $prompts_handler,
-            system_handler: $system_handler,
-            observability_handler: DummyObservabilityHandler::class,
-            request_router: null
+            $server,
+            $initialize_handler,
+            $tools_handler,
+            $resources_handler,
+            $prompts_handler,
+            $system_handler,
+            DummyObservabilityHandler::class,
+            null
         );
 
         // Create the router
@@ -82,14 +82,14 @@ final class TransportRoutingTest extends TestCase
 
         // Create the final context with the router
         return new McpTransportContext(
-            mcp_server: $server,
-            initialize_handler: $initialize_handler,
-            tools_handler: $tools_handler,
-            resources_handler: $resources_handler,
-            prompts_handler: $prompts_handler,
-            system_handler: $system_handler,
-            observability_handler: DummyObservabilityHandler::class,
-            request_router: $request_router
+            $server,
+            $initialize_handler,
+            $tools_handler,
+            $resources_handler,
+            $prompts_handler,
+            $system_handler,
+            DummyObservabilityHandler::class,
+            $request_router
         );
     }
 }

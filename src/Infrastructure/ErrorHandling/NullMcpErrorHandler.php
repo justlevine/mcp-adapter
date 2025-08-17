@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace WP\MCP\Infrastructure\ErrorHandling;
 
+use WP\MCP\Infrastructure\ErrorHandling\Contracts\McpErrorHandlerInterface;
+
 /**
  * Class NullMcpErrorHandler
  *
@@ -16,7 +18,7 @@ namespace WP\MCP\Infrastructure\ErrorHandling;
  *
  * @package WP\MCP\ErrorHandlers
  */
-class NullMcpErrorHandler implements Contracts\McpErrorHandlerInterface {
+class NullMcpErrorHandler implements McpErrorHandlerInterface {
 
 	/**
 	 * Log with context.

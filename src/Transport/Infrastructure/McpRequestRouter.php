@@ -9,7 +9,6 @@ declare( strict_types=1 );
 
 namespace WP\MCP\Transport\Infrastructure;
 
-use Throwable;
 use WP\MCP\Infrastructure\ErrorHandling\McpErrorFactory;
 
 /**
@@ -23,14 +22,14 @@ class McpRequestRouter {
 	/**
 	 * The transport context.
 	 *
-	 * @var McpTransportContext
+	 * @var \WP\MCP\Transport\Infrastructure\McpTransportContext
 	 */
 	private McpTransportContext $context;
 
 	/**
 	 * Initialize the request router.
 	 *
-	 * @param McpTransportContext $context The transport context.
+	 * @param \WP\MCP\Transport\Infrastructure\McpTransportContext $context The transport context.
 	 */
 	public function __construct(
 		McpTransportContext $context
@@ -62,24 +61,57 @@ class McpRequestRouter {
 		$this->context->observability_handler::record_event( 'mcp.request.count', $common_tags );
 
 		try {
-			$result = match ( $method ) {
-				'initialize', 'init' => $this->context->initialize_handler->handle( $request_id ),
-				'ping' => $this->context->system_handler->ping( $request_id ),
-				'tools/list' => $this->context->tools_handler->list_tools( $request_id ),
-				'tools/list/all' => $this->context->tools_handler->list_all_tools( $request_id ),
-				'tools/call' => $this->context->tools_handler->call_tool( $params, $request_id ),
-				'resources/list' => $this->add_cursor_compatibility( $this->context->resources_handler->list_resources( $request_id ) ),
-				'resources/templates/list' => $this->add_cursor_compatibility( $this->context->resources_handler->list_resource_templates( $request_id ) ),
-				'resources/read' => $this->context->resources_handler->read_resource( $params, $request_id ),
-				'resources/subscribe' => $this->context->resources_handler->subscribe_resource( $params, $request_id ),
-				'resources/unsubscribe' => $this->context->resources_handler->unsubscribe_resource( $params, $request_id ),
-				'prompts/list' => $this->context->prompts_handler->list_prompts( $request_id ),
-				'prompts/get' => $this->context->prompts_handler->get_prompt( $params, $request_id ),
-				'logging/setLevel' => $this->context->system_handler->set_logging_level( $params, $request_id ),
-				'completion/complete' => $this->context->system_handler->complete( $request_id ),
-				'roots/list' => $this->context->system_handler->list_roots( $request_id ),
-				default => $this->create_method_not_found_error( $method ),
-			};
+			switch ( $method ) {
+				case 'initialize':
+				case 'init':
+						$result = $this->context->initialize_handler->handle( $request_id );
+					break;
+				case 'ping':
+						$result = $this->context->system_handler->ping( $request_id );
+					break;
+				case 'tools/list':
+						$result = $this->context->tools_handler->list_tools( $request_id );
+					break;
+				case 'tools/list/all':
+						$result = $this->context->tools_handler->list_all_tools( $request_id );
+					break;
+				case 'tools/call':
+						$result = $this->context->tools_handler->call_tool( $params, $request_id );
+					break;
+				case 'resources/list':
+						$result = $this->add_cursor_compatibility( $this->context->resources_handler->list_resources( $request_id ) );
+					break;
+				case 'resources/templates/list':
+						$result = $this->add_cursor_compatibility( $this->context->resources_handler->list_resource_templates( $request_id ) );
+					break;
+				case 'resources/read':
+						$result = $this->context->resources_handler->read_resource( $params, $request_id );
+					break;
+				case 'resources/subscribe':
+						$result = $this->context->resources_handler->subscribe_resource( $params, $request_id );
+					break;
+				case 'resources/unsubscribe':
+						$result = $this->context->resources_handler->unsubscribe_resource( $params, $request_id );
+					break;
+				case 'prompts/list':
+						$result = $this->context->prompts_handler->list_prompts( $request_id );
+					break;
+				case 'prompts/get':
+						$result = $this->context->prompts_handler->get_prompt( $params, $request_id );
+					break;
+				case 'logging/setLevel':
+						$result = $this->context->system_handler->set_logging_level( $params, $request_id );
+					break;
+				case 'completion/complete':
+						$result = $this->context->system_handler->complete( $request_id );
+					break;
+				case 'roots/list':
+						$result = $this->context->system_handler->list_roots( $request_id );
+					break;
+				default:
+						$result = $this->create_method_not_found_error( $method );
+					break;
+			}
 
 			// Handle array error formats.
 			if ( is_array( $result ) && isset( $result['error'] ) ) {
@@ -98,8 +130,7 @@ class McpRequestRouter {
 			$this->context->observability_handler::record_event( 'mcp.request.success', $common_tags );
 
 			return $result;
-
-		} catch ( Throwable $exception ) {
+		} catch ( \Throwable $exception ) {
 			// Track failed request.
 			$error_tags = array_merge(
 				$common_tags,
@@ -109,7 +140,6 @@ class McpRequestRouter {
 
 			// Create error response from exception.
 			return array( 'error' => McpErrorFactory::internal_error( $request_id, 'Handler error occurred' )['error'] );
-
 		} finally {
 			// Track request duration.
 			$duration = ( microtime( true ) - $start_time ) * 1000; // Convert to milliseconds.
