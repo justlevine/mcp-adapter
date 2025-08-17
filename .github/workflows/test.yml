@@ -126,9 +126,36 @@ jobs:
           restore-keys: |
             phpstan-result-cache-
 
+      # @TODO Use composer directly once abilities-api is merged into core.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          node-version-file: '.nvmrc'
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Start the Docker testing environment
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            if [ "${{ matrix.coverage }}" == "true" ]; then
+            npm run wp-env start -- --xdebug=coverage
+            else
+            npm run wp-env start
+            fi
+
+      - name: Log versions
+        run: |
+          npm run wp-env -- run cli php -- -v
+          npm run wp-env -- run cli wp core version
+
       - name: Run PHP static analysis tests
         id: phpstan
-        run: composer lint:php:stan -- -vvv --error-format=checkstyle | cs2pr
+        run: npm run lint:php:stan -- -vvv --error-format=checkstyle | cs2pr
 
       - name: 'Save result cache'
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -229,7 +256,6 @@ jobs:
           npm run wp-env -- run cli wp core version
 
       - name: Run PHPUnit tests${{ matrix.coverage && ' with coverage report' || '' }}
-        continue-on-error: true
         id: phpunit
         run: |
           npm run test:php
