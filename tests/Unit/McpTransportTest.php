@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WP\MCP\Tests\Unit;
 
+use ReflectionClass;
 use WP\MCP\Core\McpServer;
 use WP\MCP\Transport\Infrastructure\McpTransportContext;
 use WP\MCP\Transport\Infrastructure\McpRequestRouter;
@@ -34,7 +35,7 @@ final class McpTransportTest extends TestCase
         $context = $this->createTransportContext($server);
         $transport = new DummyTransport($context);
 
-        $ref = new \ReflectionClass($transport);
+        $ref = new ReflectionClass($transport);
         $method = $ref->getMethod('get_transport_name');
         $method->setAccessible(true);
         $name = $method->invoke($transport);
@@ -80,16 +81,16 @@ final class McpTransportTest extends TestCase
     private function makeServer(array $tools = []): McpServer
     {
         return new McpServer(
-            server_id: 'srv',
-            server_route_namespace: 'mcp/v1',
-            server_route: '/mcp',
-            server_name: 'Srv',
-            server_description: 'desc',
-            server_version: '0.0.1',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
-            tools: $tools,
+            'srv',
+            'mcp/v1',
+            '/mcp',
+            'Srv',
+            'desc',
+            '0.0.1',
+            [],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
+            $tools,
         );
     }
 
@@ -104,14 +105,14 @@ final class McpTransportTest extends TestCase
 
         // Create context for the router first (without router to avoid circular dependency)
         $router_context = new McpTransportContext(
-            mcp_server: $server,
-            initialize_handler: $initialize_handler,
-            tools_handler: $tools_handler,
-            resources_handler: $resources_handler,
-            prompts_handler: $prompts_handler,
-            system_handler: $system_handler,
-            observability_handler: DummyObservabilityHandler::class,
-            request_router: null
+            $server,
+            $initialize_handler,
+            $tools_handler,
+            $resources_handler,
+            $prompts_handler,
+            $system_handler,
+            DummyObservabilityHandler::class,
+            null
         );
 
         // Create the router
@@ -119,14 +120,14 @@ final class McpTransportTest extends TestCase
 
         // Create the final context with the router
         return new McpTransportContext(
-            mcp_server: $server,
-            initialize_handler: $initialize_handler,
-            tools_handler: $tools_handler,
-            resources_handler: $resources_handler,
-            prompts_handler: $prompts_handler,
-            system_handler: $system_handler,
-            observability_handler: DummyObservabilityHandler::class,
-            request_router: $request_router
+            $server,
+            $initialize_handler,
+            $tools_handler,
+            $resources_handler,
+            $prompts_handler,
+            $system_handler,
+            DummyObservabilityHandler::class,
+            $request_router
         );
     }
 }

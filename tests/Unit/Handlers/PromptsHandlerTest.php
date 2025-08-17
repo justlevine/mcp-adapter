@@ -22,18 +22,7 @@ final class PromptsHandlerTest extends TestCase
 
     private function makeServer(array $prompts = []): McpServer
     {
-        return new McpServer(
-            server_id: 'srv',
-            server_route_namespace: 'mcp/v1',
-            server_route: '/mcp',
-            server_name: 'Srv',
-            server_description: 'desc',
-            server_version: '0.0.1',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
-            prompts: $prompts,
-        );
+        return new McpServer('srv', 'mcp/v1', '/mcp', 'Srv', 'desc', '0.0.1', [], DummyErrorHandler::class, DummyObservabilityHandler::class, [], [], $prompts);
     }
 
     public function test_list_prompts_returns_registered_prompts(): void

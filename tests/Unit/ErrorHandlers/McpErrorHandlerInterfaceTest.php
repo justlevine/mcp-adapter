@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WP\MCP\Tests\Unit\ErrorHandlers;
 
+use ReflectionClass;
 use WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler;
 use WP\MCP\Infrastructure\ErrorHandling\Contracts\McpErrorHandlerInterface;
 use WP\MCP\Infrastructure\ErrorHandling\NullMcpErrorHandler;
@@ -26,30 +27,30 @@ final class McpErrorHandlerInterfaceTest extends TestCase
     public function test_error_log_handler_can_log(): void
     {
         $handler = new ErrorLogMcpErrorHandler();
-        
+
         // This should not throw an exception
         $handler->log('Test message');
         $handler->log('Test with context', ['key' => 'value']);
         $handler->log('Test with type', [], 'info');
-        
+
         $this->assertTrue(true); // If we get here, no exceptions were thrown
     }
 
     public function test_null_handler_can_log(): void
     {
         $handler = new NullMcpErrorHandler();
-        
+
         // This should not throw an exception and should do nothing
         $handler->log('Test message');
         $handler->log('Test with context', ['key' => 'value']);
         $handler->log('Test with type', [], 'warning');
-        
+
         $this->assertTrue(true); // If we get here, no exceptions were thrown
     }
 
     public function test_interface_method_signature(): void
     {
-        $reflection = new \ReflectionClass(McpErrorHandlerInterface::class);
+        $reflection = new ReflectionClass(McpErrorHandlerInterface::class);
         $method = $reflection->getMethod('log');
         
         $this->assertSame('log', $method->getName());

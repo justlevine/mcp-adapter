@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace WP\MCP\Infrastructure\Observability;
 
+use WP\MCP\Infrastructure\Observability\Contracts\McpObservabilityHandlerInterface;
+
 /**
  * Class ErrorLogMcpObservabilityHandler
  *
@@ -17,7 +19,7 @@ namespace WP\MCP\Infrastructure\Observability;
  *
  * @package WP\MCP\ObservabilityHandlers
  */
-class ErrorLogMcpObservabilityHandler implements Contracts\McpObservabilityHandlerInterface {
+class ErrorLogMcpObservabilityHandler implements McpObservabilityHandlerInterface {
 
 	use McpObservabilityHelperTrait;
 
@@ -82,9 +84,7 @@ class ErrorLogMcpObservabilityHandler implements Contracts\McpObservabilityHandl
 		}
 
 		$formatted = array_map(
-			function ( $key, $value ) {
-				return sprintf( '%s=%s', $key, $value );
-			},
+			static fn( $key, $value ) => sprintf( '%s=%s', $key, $value ),
 			array_keys( $tags ),
 			array_values( $tags )
 		);

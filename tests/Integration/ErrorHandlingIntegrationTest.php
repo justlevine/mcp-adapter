@@ -71,15 +71,15 @@ final class ErrorHandlingIntegrationTest extends TestCase
     public function test_server_instantiates_error_handler_correctly(): void
     {
         $server = new McpServer(
-            server_id: 'test',
-            server_route_namespace: 'test/v1',
-            server_route: '/test',
-            server_name: 'Test Server',
-            server_description: 'Test Description',
-            server_version: '1.0.0',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
+            'test',
+            'test/v1',
+            '/test',
+            'Test Server',
+            'Test Description',
+            '1.0.0',
+            [],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
         );
 
         $this->assertInstanceOf(McpErrorHandlerInterface::class, $server->error_handler);
@@ -197,16 +197,16 @@ final class ErrorHandlingIntegrationTest extends TestCase
     private function makeServer(array $tools = []): McpServer
     {
         return new McpServer(
-            server_id: 'test',
-            server_route_namespace: 'test/v1',
-            server_route: '/test',
-            server_name: 'Test Server',
-            server_description: 'Test Description',
-            server_version: '1.0.0',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
-            tools: $tools,
+            'test',
+            'test/v1',
+            '/test',
+            'Test Server',
+            'Test Description',
+            '1.0.0',
+            [],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
+            $tools,
         );
     }
 }

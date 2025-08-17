@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace WP\MCP\Infrastructure\Observability;
 
+use WP\MCP\Infrastructure\Observability\Contracts\McpObservabilityHandlerInterface;
+
 /**
  * Class NullMcpObservabilityHandler
  *
@@ -17,7 +19,7 @@ namespace WP\MCP\Infrastructure\Observability;
  *
  * @package WP\MCP\ObservabilityHandlers
  */
-class NullMcpObservabilityHandler implements Contracts\McpObservabilityHandlerInterface {
+class NullMcpObservabilityHandler implements McpObservabilityHandlerInterface {
 
 	/**
 	 * Emit a countable event for tracking.

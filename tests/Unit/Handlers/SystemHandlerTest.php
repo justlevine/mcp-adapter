@@ -15,15 +15,15 @@ final class SystemHandlerTest extends TestCase
     public function test_ping_returns_empty_array(): void
     {
         $server = new McpServer(
-            server_id: 'srv',
-            server_route_namespace: 'mcp/v1',
-            server_route: '/mcp',
-            server_name: 'Srv',
-            server_description: 'desc',
-            server_version: '0.0.1',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
+            'srv',
+            'mcp/v1',
+            '/mcp',
+            'Srv',
+            'desc',
+            '0.0.1',
+            [],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
         );
         $handler = new SystemHandler($server);
         $this->assertSame([], $handler->ping());
@@ -32,15 +32,15 @@ final class SystemHandlerTest extends TestCase
     public function test_set_logging_level_missing_level_returns_error(): void
     {
         $server = new McpServer(
-            server_id: 'srv',
-            server_route_namespace: 'mcp/v1',
-            server_route: '/mcp',
-            server_name: 'Srv',
-            server_description: 'desc',
-            server_version: '0.0.1',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
+            'srv',
+            'mcp/v1',
+            '/mcp',
+            'Srv',
+            'desc',
+            '0.0.1',
+            [],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
         );
         $handler = new SystemHandler($server);
         $res = $handler->set_logging_level(['params' => []]);
@@ -50,15 +50,15 @@ final class SystemHandlerTest extends TestCase
     public function test_complete_and_roots_list_return_expected_shapes(): void
     {
         $server = new McpServer(
-            server_id: 'srv',
-            server_route_namespace: 'mcp/v1',
-            server_route: '/mcp',
-            server_name: 'Srv',
-            server_description: 'desc',
-            server_version: '0.0.1',
-            mcp_transports: [],
-            error_handler: DummyErrorHandler::class,
-            observability_handler: DummyObservabilityHandler::class,
+            'srv',
+            'mcp/v1',
+            '/mcp',
+            'Srv',
+            'desc',
+            '0.0.1',
+            [],
+            DummyErrorHandler::class,
+            DummyObservabilityHandler::class,
         );
         $handler = new SystemHandler($server);
         $this->assertTrue($handler->complete()['success']);

@@ -43,11 +43,11 @@ class McpErrorFactory {
 	 * @param int    $id The request ID.
 	 * @param int    $code The error code.
 	 * @param string $message The error message.
-	 * @param mixed|null $data Optional additional error data.
+	 * @param mixed $data Optional additional error data.
 	 *
 	 * @return array
 	 */
-	public static function create_error_response( int $id, int $code, string $message, mixed $data = null ): array {
+	public static function create_error_response( int $id, int $code, string $message, $data = null ): array {
 		$response = array(
 			'jsonrpc' => '2.0',
 			'id'      => $id,
@@ -288,7 +288,7 @@ class McpErrorFactory {
 	 *
 	 * @return bool|array Returns true if valid, or error array if invalid.
 	 */
-	public static function validate_jsonrpc_message( mixed $message ): bool|array {
+	public static function validate_jsonrpc_message( $message ) {
 		if ( ! is_array( $message ) ) {
 			return self::invalid_request( 0, __( 'Message must be a JSON object', 'mcp-adapter' ) );
 		}
