@@ -10,21 +10,13 @@ use WP\MCP\Handlers\Prompts\PromptsHandler;
 use WP\MCP\Handlers\Resources\ResourcesHandler;
 use WP\MCP\Handlers\System\SystemHandler;
 use WP\MCP\Handlers\Tools\ToolsHandler;
-use WP\MCP\Tests\Fixtures\DummyAbility;
 use WP\MCP\Tests\Fixtures\DummyErrorHandler;
 use WP\MCP\Tests\Fixtures\DummyObservabilityHandler;
 use WP\MCP\Tests\Fixtures\DummyTransport;
 use WP\MCP\Tests\TestCase;
-use WP\MCP\Transport\Infrastructure\McpRequestRouter;
 use WP\MCP\Transport\Infrastructure\McpTransportContext;
 
 final class TransportRoutingTest extends TestCase {
-
-	public static function set_up_before_class(): void {
-		parent::set_up_before_class();
-		do_action( 'abilities_api_init' );
-		DummyAbility::register_all();
-	}
 
 	public function test_tools_and_prompts_routed_and_cursor_added(): void {
 		$server = new McpServer(
@@ -60,26 +52,9 @@ final class TransportRoutingTest extends TestCase {
 		$tools_handler      = new ToolsHandler( $server );
 		$resources_handler  = new ResourcesHandler( $server );
 		$prompts_handler    = new PromptsHandler( $server );
-		$system_handler     = new SystemHandler( $server );
+		$system_handler     = new SystemHandler();
 
-		// Create context for the router first (without router to avoid circular dependency)
-		$router_context = new McpTransportContext(
-			array(
-				'mcp_server'            => $server,
-				'initialize_handler'    => $initialize_handler,
-				'tools_handler'         => $tools_handler,
-				'resources_handler'     => $resources_handler,
-				'prompts_handler'       => $prompts_handler,
-				'system_handler'        => $system_handler,
-				'observability_handler' => DummyObservabilityHandler::class,
-				'request_router'        => null,
-			)
-		);
-
-		// Create the router
-		$request_router = new McpRequestRouter( $router_context );
-
-		// Create the final context with the router
+		// Create the context - the router will be created automatically
 		return new McpTransportContext(
 			array(
 				'mcp_server'            => $server,
@@ -88,8 +63,7 @@ final class TransportRoutingTest extends TestCase {
 				'resources_handler'     => $resources_handler,
 				'prompts_handler'       => $prompts_handler,
 				'system_handler'        => $system_handler,
-				'observability_handler' => DummyObservabilityHandler::class,
-				'request_router'        => $request_router,
+				'observability_handler' => new DummyObservabilityHandler(),
 			)
 		);
 	}

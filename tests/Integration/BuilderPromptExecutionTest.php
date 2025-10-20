@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace WP\MCP\Tests\Integration;
 
-use WP\MCP\Core\McpServer;
 use WP\MCP\Domain\Prompts\McpPromptBuilder;
 use WP\MCP\Handlers\Prompts\PromptsHandler;
-use WP\MCP\Tests\Fixtures\DummyErrorHandler;
-use WP\MCP\Tests\Fixtures\DummyObservabilityHandler;
 use WP\MCP\Tests\TestCase;
 
 // Test prompt that requires admin permissions
@@ -38,6 +35,7 @@ class AdminOnlyPrompt extends McpPromptBuilder {
 }
 
 // Test prompt that always allows execution
+// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
 class OpenPrompt extends McpPromptBuilder {
 
 	protected function configure(): void {
@@ -59,25 +57,11 @@ class OpenPrompt extends McpPromptBuilder {
 	}
 }
 
+// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
 final class BuilderPromptExecutionTest extends TestCase {
 
-	private function makeServer(): McpServer {
-		return new McpServer(
-			'test-srv',
-			'mcp/v1',
-			'/mcp',
-			'Test Server',
-			'Test server for builder prompts',
-			'1.0.0',
-			array(),
-			DummyErrorHandler::class,
-			DummyObservabilityHandler::class,
-		);
-	}
-
 	public function test_builder_prompt_execution_through_handler(): void {
-		$server = $this->makeServer();
-		$server->register_prompts( array( OpenPrompt::class ) );
+		$server = $this->makeServer( array(), array(), array( OpenPrompt::class ) );
 
 		$handler = new PromptsHandler( $server );
 
@@ -95,8 +79,7 @@ final class BuilderPromptExecutionTest extends TestCase {
 	}
 
 	public function test_builder_prompt_permission_denied(): void {
-		$server = $this->makeServer();
-		$server->register_prompts( array( AdminOnlyPrompt::class ) );
+		$server = $this->makeServer( array(), array(), array( AdminOnlyPrompt::class ) );
 
 		$handler = new PromptsHandler( $server );
 
@@ -114,10 +97,10 @@ final class BuilderPromptExecutionTest extends TestCase {
 	}
 
 	public function test_mixed_ability_and_builder_prompts(): void {
-		$server = $this->makeServer();
-
 		// Register both builder and ability-based prompts
-		$server->register_prompts(
+		$server = $this->makeServer(
+			array(),
+			array(),
 			array(
 				OpenPrompt::class,           // Builder-based
 				'fake/ability-prompt',       // Ability-based (will fail to register)
@@ -132,8 +115,7 @@ final class BuilderPromptExecutionTest extends TestCase {
 	}
 
 	public function test_builder_prompt_bypasses_abilities_completely(): void {
-		$server = $this->makeServer();
-		$server->register_prompts( array( OpenPrompt::class ) );
+		$server = $this->makeServer( array(), array(), array( OpenPrompt::class ) );
 
 		$prompt = $server->get_prompt( 'open-test' );
 

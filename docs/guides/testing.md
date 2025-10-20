@@ -14,7 +14,7 @@ This guide explains how to run and write tests for the MCP Adapter. The suite su
 ## Test Layout
 
 - `tests/Unit/*`: fast unit tests for pure PHP logic and MCP handlers
-- `tests/Integration/*`: WordPress-integration tests that exercise filters, permissions, and routing
+- `tests/Integration/*`: WordPress-integration tests that exercise filters, permissions, routing, and transport layers
 - `tests/Fixtures/*`: test doubles (dummy error/observability handlers, abilities, transport)
 
 ## Running Tests
@@ -64,14 +64,33 @@ Fixtures:
 - `DummyObservabilityHandler` captures `increment()` and `timing()` calls
 - `DummyErrorHandler` collects logs for assertions
 
-## Handlers and Routing Covered
+## Test Coverage
 
+### Handlers and Routing
 - Initialize: protocolVersion, serverInfo, capabilities, and instructions
 - Tools: list, list-all (available=true), call (permission errors, exceptions, image/text responses)
-- Resources: list, templates, read, subscribe/unsubscribe
+- Resources: list, read
 - Prompts: list, get
-- System: ping, setLoggingLevel, complete, listRoots
+- System: ping, setLoggingLevel
 - Transport: routing, unknown method, cursor compatibility, metric tags
+- Error handling: consistent error response formats and logging
+- Session management: state handling and cleanup
+
+### MCP Transport Compliance (HttpTransport)
+- **MCP 2025-06-18 Streamable HTTP specification compliance**
+- HTTP methods: GET, POST, DELETE, OPTIONS
+- JSON-RPC 2.0 message format validation
+- Session management and termination
+- CORS preflight and header handling
+- Notification handling (202 responses)
+- Accept header validation for different request types
+- Error response format compliance
+- Protocol version header handling
+- Batch request processing
+- Session state management and cleanup
+- HTTP request context validation
+
+**Test Location**: `tests/Integration/HttpTransportTest.php` (comprehensive test coverage)
 
 ## Writing New Tests
 

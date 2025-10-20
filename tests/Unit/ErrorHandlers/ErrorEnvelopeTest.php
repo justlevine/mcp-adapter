@@ -18,11 +18,15 @@ final class ErrorEnvelopeTest extends TestCase {
 		$this->assertArrayHasKey( 'message', $err['error'] );
 	}
 
+	/**
+	 * Test missing_parameter() convenience wrapper.
+	 * Note: This uses the standard INVALID_PARAMS error code.
+	 */
 	public function test_missing_parameter_error(): void {
 		$err = McpErrorFactory::missing_parameter( 123, 'test_param' );
 
 		$this->assertSame( 123, $err['id'] );
-		$this->assertSame( McpErrorFactory::MISSING_PARAMETER, $err['error']['code'] );
+		$this->assertSame( McpErrorFactory::INVALID_PARAMS, $err['error']['code'] );
 		$this->assertStringContainsString( 'test_param', $err['error']['message'] );
 	}
 
@@ -98,6 +102,10 @@ final class ErrorEnvelopeTest extends TestCase {
 		$this->assertStringContainsString( 'Missing field', $err['error']['message'] );
 	}
 
+	/**
+	 * Test invalid_params() method.
+	 * Note: missing_parameter() is a convenience wrapper that also uses this error code.
+	 */
 	public function test_invalid_params_error(): void {
 		$err = McpErrorFactory::invalid_params( 108, 'Wrong type' );
 
@@ -106,44 +114,48 @@ final class ErrorEnvelopeTest extends TestCase {
 		$this->assertStringContainsString( 'Wrong type', $err['error']['message'] );
 	}
 
+	/**
+	 * Test mcp_disabled() convenience wrapper.
+	 * Note: This uses the standard SERVER_ERROR error code.
+	 */
 	public function test_mcp_disabled_error(): void {
 		$err = McpErrorFactory::mcp_disabled( 109 );
 
 		$this->assertSame( 109, $err['id'] );
-		$this->assertSame( McpErrorFactory::MCP_DISABLED, $err['error']['code'] );
+		$this->assertSame( McpErrorFactory::SERVER_ERROR, $err['error']['code'] );
 		$this->assertStringContainsString( 'disabled', $err['error']['message'] );
 	}
 
 	public function test_jsonrpc_message_validation_valid(): void {
-		$validMessage = array(
+		$valid_message = array(
 			'jsonrpc' => '2.0',
 			'method'  => 'test',
 			'id'      => 1,
 		);
 
-		$result = McpErrorFactory::validate_jsonrpc_message( $validMessage );
+		$result = McpErrorFactory::validate_jsonrpc_message( $valid_message );
 		$this->assertTrue( $result );
 	}
 
 	public function test_jsonrpc_message_validation_invalid_version(): void {
-		$invalidMessage = array(
+		$invalid_message = array(
 			'jsonrpc' => '1.0',
 			'method'  => 'test',
 			'id'      => 1,
 		);
 
-		$result = McpErrorFactory::validate_jsonrpc_message( $invalidMessage );
+		$result = McpErrorFactory::validate_jsonrpc_message( $invalid_message );
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'error', $result );
 	}
 
 	public function test_jsonrpc_message_validation_missing_method(): void {
-		$invalidMessage = array(
+		$invalid_message = array(
 			'jsonrpc' => '2.0',
 			'id'      => 1,
 		);
 
-		$result = McpErrorFactory::validate_jsonrpc_message( $invalidMessage );
+		$result = McpErrorFactory::validate_jsonrpc_message( $invalid_message );
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'error', $result );
 	}

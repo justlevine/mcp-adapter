@@ -10,12 +10,15 @@ declare( strict_types=1 );
 namespace WP\MCP\Handlers\Resources;
 
 use WP\MCP\Core\McpServer;
+use WP\MCP\Handlers\HandlerHelperTrait;
 use WP\MCP\Infrastructure\ErrorHandling\McpErrorFactory;
 
 /**
  * Handles resources-related MCP methods.
  */
 class ResourcesHandler {
+	use HandlerHelperTrait;
+
 	/**
 	 * The WordPress MCP instance.
 	 *
@@ -32,24 +35,6 @@ class ResourcesHandler {
 		$this->mcp = $mcp;
 	}
 
-	/**
-	 * Check if user has permission to access resources.
-	 *
-	 * Authorization is primarily handled at the transport level. For additional
-	 * hardening, this handler can also enforce authentication when the
-	 * `mcp_enforce_handler_auth` filter returns true.
-	 *
-	 * @return array|null Returns error if permission denied, null if allowed.
-	 */
-	private function check_permission(): ?array {
-		$enforce_handler_auth = (bool) apply_filters( 'mcp_enforce_handler_auth', false );
-
-		if ( $enforce_handler_auth && ! is_user_logged_in() ) {
-			return array( 'error' => McpErrorFactory::unauthorized( 0, 'You must be logged in to access resources.' )['error'] );
-		}
-
-		return null;
-	}
 
 	/**
 	 * Handle the resources/list request.
@@ -59,11 +44,6 @@ class ResourcesHandler {
 	 * @return array
 	 */
 	public function list_resources( int $request_id = 0 ): array {
-		$permission_error = $this->check_permission();
-		if ( $permission_error ) {
-			return $permission_error;
-		}
-
 		// Get the registered resources from the MCP instance and extract only the args.
 		$resources = array();
 		foreach ( $this->mcp->get_resources() as $resource ) {
@@ -72,44 +52,33 @@ class ResourcesHandler {
 
 		return array(
 			'resources' => $resources,
-		);
-	}
-
-	/**
-	 * Handle the resources/templates/list request.
-	 *
-	 * @param int $request_id The request ID for JSON-RPC.
-	 *
-	 * @return array
-	 */
-	public function list_resource_templates( int $request_id = 0 ): array {
-		$permission_error = $this->check_permission();
-		if ( $permission_error ) {
-			return $permission_error;
-		}
-
-		// Implement resource template listing logic here.
-		$templates = array();
-
-		return array(
-			'templates' => $templates,
+			'_metadata' => array(
+				'component_type'  => 'resources',
+				'resources_count' => count( $resources ),
+			),
 		);
 	}
 
 	/**
 	 * Handle the resources/read request.
 	 *
-	 * @param array $params     Request parameters.
-	 * @param int   $request_id The request ID for JSON-RPC.
+	 * @param array $params Request parameters.
+	 * @param int $request_id The request ID for JSON-RPC.
 	 *
 	 * @return array
 	 */
 	public function read_resource( array $params, int $request_id = 0 ): array {
-		// Handle both direct params and nested params structure.
-		$request_params = $params['params'] ?? $params;
+		// Extract parameters using helper method.
+		$request_params = $this->extract_params( $params );
 
 		if ( ! isset( $request_params['uri'] ) ) {
-			return array( 'error' => McpErrorFactory::missing_parameter( $request_id, 'uri' )['error'] );
+			return array(
+				'error'     => McpErrorFactory::missing_parameter( $request_id, 'uri' )['error'],
+				'_metadata' => array(
+					'component_type' => 'resource',
+					'failure_reason' => 'missing_parameter',
+				),
+			);
 		}
 
 		// Implement resource reading logic here.
@@ -117,7 +86,14 @@ class ResourcesHandler {
 		$resource = $this->mcp->get_resource( $uri );
 
 		if ( ! $resource ) {
-			return array( 'error' => McpErrorFactory::resource_not_found( $request_id, $uri )['error'] );
+			return array(
+				'error'     => McpErrorFactory::resource_not_found( $request_id, $uri )['error'],
+				'_metadata' => array(
+					'component_type' => 'resource',
+					'resource_uri'   => $uri,
+					'failure_reason' => 'not_found',
+				),
+			);
 		}
 
 		/**
@@ -129,83 +105,58 @@ class ResourcesHandler {
 		$ability = $resource->get_ability();
 
 		try {
-			$has_permission = $ability->has_permission( $request_params );
+			$has_permission = $ability->check_permissions( $request_params );
 			if ( true !== $has_permission ) {
-				return array( 'error' => McpErrorFactory::permission_denied( $request_id, 'Access denied for resource: ' . $resource->get_name() )['error'] );
+				// Extract detailed error message and code if WP_Error was returned
+				$error_message  = 'Access denied for resource: ' . $resource->get_name();
+				$failure_reason = 'permission_denied';
+
+				if ( is_wp_error( $has_permission ) ) {
+					$error_message  = $has_permission->get_error_message();
+					$failure_reason = $has_permission->get_error_code(); // Use WP_Error code as failure_reason
+				}
+
+				return array(
+					'error'     => McpErrorFactory::permission_denied( $request_id, $error_message )['error'],
+					'_metadata' => array(
+						'component_type' => 'resource',
+						'resource_uri'   => $uri,
+						'resource_name'  => $resource->get_name(),
+						'ability_name'   => $ability->get_name(),
+						'failure_reason' => $failure_reason,
+					),
+				);
 			}
 
 			$contents = $ability->execute( $request_params );
 
 			return array(
-				'contents' => $contents,
+				'contents'  => $contents,
+				'_metadata' => array(
+					'component_type' => 'resource',
+					'resource_uri'   => $uri,
+					'resource_name'  => $resource->get_name(),
+					'ability_name'   => $ability->get_name(),
+				),
 			);
 		} catch ( \Throwable $exception ) {
-			if ( $this->mcp->error_handler ) {
-				$this->mcp->error_handler->log(
-					'Error reading resource',
-					array(
-						'uri'       => $uri,
-						'exception' => $exception->getMessage(),
-					)
-				);
-			}
+			$this->mcp->error_handler->log(
+				'Error reading resource',
+				array(
+					'uri'       => $uri,
+					'exception' => $exception->getMessage(),
+				)
+			);
 
-			return array( 'error' => McpErrorFactory::internal_error( $request_id, 'Failed to read resource' )['error'] );
+			return array(
+				'error'     => McpErrorFactory::internal_error( $request_id, 'Failed to read resource' )['error'],
+				'_metadata' => array(
+					'component_type' => 'resource',
+					'resource_uri'   => $uri,
+					'failure_reason' => 'execution_failed',
+					'error_type'     => get_class( $exception ),
+				),
+			);
 		}
-	}
-
-	/**
-	 * Handle the resources/subscribe request.
-	 *
-	 * @param array $params     Request parameters.
-	 * @param int   $request_id The request ID for JSON-RPC.
-	 *
-	 * @return array
-	 */
-	public function subscribe_resource( array $params, int $request_id = 0 ): array {
-		$permission_error = $this->check_permission();
-		if ( $permission_error ) {
-			return $permission_error;
-		}
-
-		// Handle both direct params and nested params structure.
-		$request_params = $params['params'] ?? $params;
-
-		if ( ! isset( $request_params['uri'] ) ) {
-			return array( 'error' => McpErrorFactory::missing_parameter( $request_id, 'uri' )['error'] );
-		}
-
-		// Implement resource subscription logic here.
-		$uri = $request_params['uri'];
-
-		return array(
-			'subscriptionId' => 'sub_' . md5( $uri ),
-		);
-	}
-
-	/**
-	 * Handle the resources/unsubscribe request.
-	 *
-	 * @param array $params     Request parameters.
-	 * @param int   $request_id The request ID for JSON-RPC.
-	 *
-	 * @return array
-	 */
-	public function unsubscribe_resource( array $params, int $request_id = 0 ): array {
-		$permission_error = $this->check_permission();
-		if ( $permission_error ) {
-			return $permission_error;
-		}
-
-		// Handle both direct params and nested params structure.
-		$request_params = $params['params'] ?? $params;
-
-		if ( ! isset( $request_params['subscriptionId'] ) ) {
-			return array( 'error' => McpErrorFactory::missing_parameter( $request_id, 'subscriptionId' )['error'] );
-		}
-
-		return array(
-			'success' => true,
-		);
 	}
 }

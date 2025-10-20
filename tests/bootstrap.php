@@ -10,6 +10,9 @@
 
 define( 'TESTS_REPO_ROOT_DIR', dirname( __DIR__ ) );
 
+// Set custom debug log location for tests.
+define( 'WP_DEBUG_LOG_FILE', TESTS_REPO_ROOT_DIR . '/tests/_output/debug.log' );
+
 // Load Composer dependencies if applicable.
 if ( file_exists( TESTS_REPO_ROOT_DIR . '/vendor/autoload.php' ) ) {
 	require_once TESTS_REPO_ROOT_DIR . '/vendor/autoload.php';
@@ -44,3 +47,24 @@ tests_add_filter(
 
 // Start up the WP testing environment.
 require $_test_root . '/includes/bootstrap.php';
+
+// Load WP-CLI stubs for testing WP-CLI commands
+// This includes essential classes and functions extracted from php-stubs/wp-cli-stubs
+require_once __DIR__ . '/Stubs/WpCliStubs.php';
+\WP\MCP\Tests\Stubs\WpCliStubs::init();
+
+// Mock WordPress functions that may not be available in test environment.
+if ( ! function_exists( 'wp_generate_uuid4' ) ) {
+	/**
+	 * Mock wp_generate_uuid4 function for testing.
+	 *
+	 * This is a temporary mock for the WordPress function that may not be available
+	 * in the test environment. In a production environment, this function is provided
+	 * by WordPress core.
+	 *
+	 * @return string A test session UUID.
+	 */
+	function wp_generate_uuid4() {
+		return 'test-session-' . uniqid();
+	}
+}

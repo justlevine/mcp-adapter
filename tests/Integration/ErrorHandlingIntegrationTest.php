@@ -10,18 +10,11 @@ use WP\MCP\Infrastructure\ErrorHandling\Contracts\McpErrorHandlerInterface;
 use WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler;
 use WP\MCP\Infrastructure\ErrorHandling\McpErrorFactory;
 use WP\MCP\Infrastructure\ErrorHandling\NullMcpErrorHandler;
-use WP\MCP\Tests\Fixtures\DummyAbility;
 use WP\MCP\Tests\Fixtures\DummyErrorHandler;
 use WP\MCP\Tests\Fixtures\DummyObservabilityHandler;
 use WP\MCP\Tests\TestCase;
 
 final class ErrorHandlingIntegrationTest extends TestCase {
-
-	public static function set_up_before_class(): void {
-		parent::set_up_before_class();
-		do_action( 'abilities_api_init' );
-		DummyAbility::register_all();
-	}
 
 	public function test_error_factory_creates_consistent_errors(): void {
 		// Test that all error factory methods return consistent structure
@@ -90,7 +83,7 @@ final class ErrorHandlingIntegrationTest extends TestCase {
 		$result = $handler->call_tool( array( 'params' => array() ) );
 		$this->assertArrayHasKey( 'error', $result );
 		$this->assertArrayHasKey( 'code', $result['error'] );
-		$this->assertSame( McpErrorFactory::MISSING_PARAMETER, $result['error']['code'] );
+		$this->assertSame( McpErrorFactory::INVALID_PARAMS, $result['error']['code'] );
 
 		// Test tool not found error
 		$result = $handler->call_tool( array( 'params' => array( 'name' => 'nonexistent-tool' ) ) );
@@ -102,8 +95,6 @@ final class ErrorHandlingIntegrationTest extends TestCase {
 	public function test_error_logging_works_with_instances(): void {
 		$server  = $this->makeServer( array( 'test/permission-exception' ) );
 		$handler = new ToolsHandler( $server );
-
-		DummyErrorHandler::reset();
 
 		// This should trigger an error and log it
 		$result = $handler->call_tool( array( 'params' => array( 'name' => 'test-permission-exception' ) ) );
@@ -119,52 +110,51 @@ final class ErrorHandlingIntegrationTest extends TestCase {
 
 	public function test_json_rpc_validation_methods(): void {
 		// Valid message
-		$validMessage = array(
+		$valid_message = array(
 			'jsonrpc' => '2.0',
 			'method'  => 'test',
 			'id'      => 1,
 		);
-		$this->assertTrue( McpErrorFactory::validate_jsonrpc_message( $validMessage ) );
+		$this->assertTrue( McpErrorFactory::validate_jsonrpc_message( $valid_message ) );
 
 		// Invalid version
-		$invalidMessage = array(
+		$invalid_message = array(
 			'jsonrpc' => '1.0',
 			'method'  => 'test',
 			'id'      => 1,
 		);
-		$result         = McpErrorFactory::validate_jsonrpc_message( $invalidMessage );
+		$result          = McpErrorFactory::validate_jsonrpc_message( $invalid_message );
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'error', $result );
 
 		// Missing method (but has id and result - response message)
-		$responseMessage = array(
+		$response_message = array(
 			'jsonrpc' => '2.0',
 			'id'      => 1,
 			'result'  => array( 'success' => true ),
 		);
-		$this->assertTrue( McpErrorFactory::validate_jsonrpc_message( $responseMessage ) );
+		$this->assertTrue( McpErrorFactory::validate_jsonrpc_message( $response_message ) );
 
 		// Completely invalid
-		$invalidMessage = array(
+		$invalid_message = array(
 			'jsonrpc' => '2.0',
 			'id'      => 1,
 			// No method, result, or error
 		);
-		$result = McpErrorFactory::validate_jsonrpc_message( $invalidMessage );
+		$result = McpErrorFactory::validate_jsonrpc_message( $invalid_message );
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'error', $result );
 	}
 
 	public function test_error_codes_are_properly_defined(): void {
 		// Test that all error codes are negative integers as per JSON-RPC spec
-		$errorCodes = array(
+		$error_codes = array(
 			McpErrorFactory::PARSE_ERROR,
 			McpErrorFactory::INVALID_REQUEST,
 			McpErrorFactory::METHOD_NOT_FOUND,
 			McpErrorFactory::INVALID_PARAMS,
 			McpErrorFactory::INTERNAL_ERROR,
-			McpErrorFactory::MCP_DISABLED,
-			McpErrorFactory::MISSING_PARAMETER,
+			McpErrorFactory::SERVER_ERROR,
 			McpErrorFactory::RESOURCE_NOT_FOUND,
 			McpErrorFactory::TOOL_NOT_FOUND,
 			McpErrorFactory::PROMPT_NOT_FOUND,
@@ -172,7 +162,7 @@ final class ErrorHandlingIntegrationTest extends TestCase {
 			McpErrorFactory::UNAUTHORIZED,
 		);
 
-		foreach ( $errorCodes as $code ) {
+		foreach ( $error_codes as $code ) {
 			$this->assertIsInt( $code );
 			$this->assertLessThan( 0, $code );
 		}
@@ -182,22 +172,7 @@ final class ErrorHandlingIntegrationTest extends TestCase {
 		$this->assertLessThanOrEqual( -32000, McpErrorFactory::PARSE_ERROR );
 
 		// Test that custom MCP codes are in the implementation-defined range (-32000 to -32099)
-		$this->assertLessThanOrEqual( -32000, McpErrorFactory::MISSING_PARAMETER );
-		$this->assertGreaterThanOrEqual( -32099, McpErrorFactory::MISSING_PARAMETER );
-	}
-
-	private function makeServer( array $tools = array() ): McpServer {
-		return new McpServer(
-			'test',
-			'test/v1',
-			'/test',
-			'Test Server',
-			'Test Description',
-			'1.0.0',
-			array(),
-			DummyErrorHandler::class,
-			DummyObservabilityHandler::class,
-			$tools,
-		);
+		$this->assertLessThanOrEqual( -32000, McpErrorFactory::SERVER_ERROR );
+		$this->assertGreaterThanOrEqual( -32099, McpErrorFactory::SERVER_ERROR );
 	}
 }

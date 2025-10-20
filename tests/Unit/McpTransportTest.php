@@ -10,22 +10,12 @@ use WP\MCP\Handlers\Prompts\PromptsHandler;
 use WP\MCP\Handlers\Resources\ResourcesHandler;
 use WP\MCP\Handlers\System\SystemHandler;
 use WP\MCP\Handlers\Tools\ToolsHandler;
-use WP\MCP\Tests\Fixtures\DummyAbility;
-use WP\MCP\Tests\Fixtures\DummyErrorHandler;
 use WP\MCP\Tests\Fixtures\DummyObservabilityHandler;
 use WP\MCP\Tests\Fixtures\DummyTransport;
 use WP\MCP\Tests\TestCase;
-use WP\MCP\Transport\Infrastructure\McpRequestRouter;
 use WP\MCP\Transport\Infrastructure\McpTransportContext;
 
 final class McpTransportTest extends TestCase {
-
-	public static function set_up_before_class(): void {
-		parent::set_up_before_class();
-		// Make sure abilities API is initialized
-		do_action( 'abilities_api_init' );
-		DummyAbility::register_all();
-	}
 
 	public function test_transport_helper_trait_normalizes_class_name(): void {
 		$server    = $this->makeServer();
@@ -46,46 +36,48 @@ final class McpTransportTest extends TestCase {
 		$context   = $this->createTransportContext( $server );
 		$transport = new DummyTransport( $context );
 
-		DummyObservabilityHandler::reset();
-
 		$res = $transport->test_route_request( 'tools/list', array() );
 		$this->assertIsArray( $res );
 		$this->assertArrayHasKey( 'tools', $res );
 
-		// metrics
+		// metrics (unified event name with status tag)
 		$this->assertNotEmpty( DummyObservabilityHandler::$events );
-		$this->assertNotEmpty( DummyObservabilityHandler::$timings );
-		$eventMetrics = array_column( DummyObservabilityHandler::$events, 'event' );
-		$this->assertContains( 'mcp.request.count', $eventMetrics );
-		$this->assertContains( 'mcp.request.success', $eventMetrics );
+		$event_metrics = array_column( DummyObservabilityHandler::$events, 'event' );
+		$this->assertContains( 'mcp.request', $event_metrics );
+
+		// Verify duration and status are included
+		$success_event = array_filter(
+			DummyObservabilityHandler::$events,
+			static function ( $event ) {
+				return 'mcp.request' === $event['event'] && isset( $event['tags']['status'] ) && 'success' === $event['tags']['status'];
+			}
+		);
+		$this->assertNotEmpty( $success_event );
+		$first_success = reset( $success_event );
+		$this->assertNotNull( $first_success['duration_ms'] );
 	}
 
 	public function test_transport_handles_unknown_methods_with_error_metrics(): void {
 		$server    = $this->makeServer();
 		$context   = $this->createTransportContext( $server );
 		$transport = new DummyTransport( $context );
-		DummyObservabilityHandler::reset();
 
 		$res = $transport->test_route_request( 'unknown/method', array() );
 		$this->assertArrayHasKey( 'error', $res );
 
+		// Verify error event was recorded with duration and status tag
 		$this->assertNotEmpty( DummyObservabilityHandler::$events );
-		$this->assertNotEmpty( DummyObservabilityHandler::$timings );
-	}
+		$event_metrics = array_column( DummyObservabilityHandler::$events, 'event' );
+		$this->assertContains( 'mcp.request', $event_metrics );
 
-	private function makeServer( array $tools = array() ): McpServer {
-		return new McpServer(
-			'srv',
-			'mcp/v1',
-			'/mcp',
-			'Srv',
-			'desc',
-			'0.0.1',
-			array(),
-			DummyErrorHandler::class,
-			DummyObservabilityHandler::class,
-			$tools,
+		// Verify status is 'error'
+		$error_event = array_filter(
+			DummyObservabilityHandler::$events,
+			static function ( $event ) {
+				return 'mcp.request' === $event['event'] && isset( $event['tags']['status'] ) && 'error' === $event['tags']['status'];
+			}
 		);
+		$this->assertNotEmpty( $error_event );
 	}
 
 	private function createTransportContext( McpServer $server ): McpTransportContext {
@@ -94,26 +86,9 @@ final class McpTransportTest extends TestCase {
 		$tools_handler      = new ToolsHandler( $server );
 		$resources_handler  = new ResourcesHandler( $server );
 		$prompts_handler    = new PromptsHandler( $server );
-		$system_handler     = new SystemHandler( $server );
+		$system_handler     = new SystemHandler();
 
-		// Create context for the router first (without router to avoid circular dependency)
-		$router_context = new McpTransportContext(
-			array(
-				'mcp_server'            => $server,
-				'initialize_handler'    => $initialize_handler,
-				'tools_handler'         => $tools_handler,
-				'resources_handler'     => $resources_handler,
-				'prompts_handler'       => $prompts_handler,
-				'system_handler'        => $system_handler,
-				'observability_handler' => DummyObservabilityHandler::class,
-				'request_router'        => null,
-			)
-		);
-
-		// Create the router
-		$request_router = new McpRequestRouter( $router_context );
-
-		// Create the final context with the router
+		// Create the context - the router will be created automatically
 		return new McpTransportContext(
 			array(
 				'mcp_server'            => $server,
@@ -122,8 +97,7 @@ final class McpTransportTest extends TestCase {
 				'resources_handler'     => $resources_handler,
 				'prompts_handler'       => $prompts_handler,
 				'system_handler'        => $system_handler,
-				'observability_handler' => DummyObservabilityHandler::class,
-				'request_router'        => $request_router,
+				'observability_handler' => new DummyObservabilityHandler(),
 			)
 		);
 	}

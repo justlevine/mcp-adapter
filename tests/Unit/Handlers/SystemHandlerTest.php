@@ -13,7 +13,7 @@ use WP\MCP\Tests\TestCase;
 final class SystemHandlerTest extends TestCase {
 
 	public function test_ping_returns_empty_array(): void {
-		$server  = new McpServer(
+		new McpServer(
 			'srv',
 			'mcp/v1',
 			'/mcp',
@@ -24,12 +24,12 @@ final class SystemHandlerTest extends TestCase {
 			DummyErrorHandler::class,
 			DummyObservabilityHandler::class,
 		);
-		$handler = new SystemHandler( $server );
+		$handler = new SystemHandler();
 		$this->assertSame( array(), $handler->ping() );
 	}
 
 	public function test_set_logging_level_missing_level_returns_error(): void {
-		$server  = new McpServer(
+		new McpServer(
 			'srv',
 			'mcp/v1',
 			'/mcp',
@@ -40,13 +40,13 @@ final class SystemHandlerTest extends TestCase {
 			DummyErrorHandler::class,
 			DummyObservabilityHandler::class,
 		);
-		$handler = new SystemHandler( $server );
+		$handler = new SystemHandler();
 		$res     = $handler->set_logging_level( array( 'params' => array() ) );
 		$this->assertArrayHasKey( 'error', $res );
 	}
 
 	public function test_complete_and_roots_list_return_expected_shapes(): void {
-		$server  = new McpServer(
+		new McpServer(
 			'srv',
 			'mcp/v1',
 			'/mcp',
@@ -57,8 +57,8 @@ final class SystemHandlerTest extends TestCase {
 			DummyErrorHandler::class,
 			DummyObservabilityHandler::class,
 		);
-		$handler = new SystemHandler( $server );
-		$this->assertTrue( $handler->complete()['success'] );
+		$handler = new SystemHandler();
+		$this->assertSame( array(), $handler->complete() );
 		$this->assertArrayHasKey( 'roots', $handler->list_roots() );
 	}
 }

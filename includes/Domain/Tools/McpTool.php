@@ -111,10 +111,14 @@ class McpTool {
 	/**
 	 * Get the ability name.
 	 *
-	 * @return \WP_Ability|null
+	 * @return \WP_Ability
 	 */
-	public function get_ability(): ?WP_Ability {
-		return wp_get_ability( $this->ability );
+	public function get_ability(): WP_Ability {
+		$ability = wp_get_ability( $this->ability );
+		if ( ! $ability ) {
+			throw new \InvalidArgumentException( esc_html( "WordPress ability '{$this->ability}' does not exist." ) );
+		}
+		return $ability;
 	}
 
 	/**
