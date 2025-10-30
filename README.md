@@ -461,7 +461,7 @@ add_action('mcp_adapter_init', function($adapter) {
             \WP\MCP\Transport\HttpTransport::class,  // Recommended: MCP 2025-06-18 compliant
         ],
         \WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler::class, // Error handler
-        \WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler::class // Observability handler
+        \WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler::class, // Observability handler
         ['my-plugin/my-ability'],         // Abilities to expose as tools
         [],                              // Resources (optional)
         [],                              // Prompts (optional)
