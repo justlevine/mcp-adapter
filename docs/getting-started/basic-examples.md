@@ -106,7 +106,7 @@ add_action( 'wp_abilities_api_init', function() {
 });
 ```
 
-The ability is automatically available via the default MCP server at `/wp-json/mcp-adapter/v1/mcp`.
+The ability is automatically available via the default MCP server at `/wp-json/mcp/mcp-adapter-default-server`.
 
 ### Testing the Tool
 

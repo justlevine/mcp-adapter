@@ -164,7 +164,7 @@ Alternatively, you can install the MCP Adapter as a traditional WordPress plugin
    wp plugin activate mcp-adapter
    ```
 
-The plugin automatically initializes and creates a default MCP server at `/wp-json/mcp-adapter/v1/mcp`.
+The plugin automatically initializes and creates a default MCP server at `/wp-json/wp-json/mcp/mcp-adapter-default-server`.
 
 ## Verifying Installation
 

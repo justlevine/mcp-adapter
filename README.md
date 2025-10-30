@@ -285,7 +285,7 @@ The MCP Adapter automatically creates a default server that exposes all register
 - The default server supports both HTTP and STDIO transports with MCP 2025-06-18 compliance
 - Abilities are exposed as tools, resources, or prompts based on their characteristics
 - Built-in error handling and observability are included
-- Access via HTTP: `/wp-json/mcp-adapter/v1/mcp`
+- Access via HTTP: `/wp-json/mcp/mcp-adapter-default-server`
 - Access via STDIO: `wp mcp-adapter serve --server=mcp-adapter-default-server`
 
 <details>
