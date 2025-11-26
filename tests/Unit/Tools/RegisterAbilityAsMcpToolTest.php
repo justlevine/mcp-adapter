@@ -12,8 +12,8 @@ final class RegisterAbilityAsMcpToolTest extends TestCase {
 	public function test_make_builds_tool_from_ability(): void {
 		$ability = wp_get_ability( 'test/always-allowed' );
 		$this->assertNotNull( $ability, 'Ability test/always-allowed should be registered' );
-		$tool    = RegisterAbilityAsMcpTool::make( $ability, $this->makeServer() );
-		$arr     = $tool->to_array();
+		$tool = RegisterAbilityAsMcpTool::make( $ability, $this->makeServer() );
+		$arr  = $tool->to_array();
 		$this->assertSame( 'test-always-allowed', $arr['name'] );
 		$this->assertArrayHasKey( 'inputSchema', $arr );
 	}
@@ -188,5 +188,41 @@ final class RegisterAbilityAsMcpToolTest extends TestCase {
 		$this->assertArrayNotHasKey( 'readonly', $arr['annotations'] );
 		$this->assertArrayNotHasKey( 'destructive', $arr['annotations'] );
 		$this->assertArrayNotHasKey( 'idempotent', $arr['annotations'] );
+	}
+
+	public function test_transformation_flags_are_stored_in_metadata(): void {
+		$this->register_ability_in_hook(
+			'test/flat-transformed-tool',
+			array(
+				'label'               => 'Flat Transformed Tool',
+				'description'         => 'Uses flat schemas',
+				'category'            => 'test',
+				'input_schema'        => array( 'type' => 'string' ),
+				'output_schema'       => array( 'type' => 'string' ),
+				'execute_callback'    => static function ( $input ) {
+					return $input;
+				},
+				'permission_callback' => static function () {
+					return true;
+				},
+				'meta'                => array(
+					'mcp' => array( 'public' => true ),
+				),
+			)
+		);
+
+		$ability = wp_get_ability( 'test/flat-transformed-tool' );
+		$this->assertNotNull( $ability, 'Ability test/flat-transformed-tool should be registered' );
+		$tool = RegisterAbilityAsMcpTool::make( $ability, $this->makeServer() );
+
+		$this->assertInstanceOf( \WP\MCP\Domain\Tools\McpTool::class, $tool );
+
+		$metadata = $tool->get_metadata();
+		$this->assertTrue( $metadata['_input_schema_transformed'] ?? false );
+		$this->assertTrue( $metadata['_output_schema_transformed'] ?? false );
+		$this->assertSame( 'input', $metadata['_input_schema_wrapper'] ?? '' );
+		$this->assertSame( 'result', $metadata['_output_schema_wrapper'] ?? '' );
+
+		wp_unregister_ability( 'test/flat-transformed-tool' );
 	}
 }

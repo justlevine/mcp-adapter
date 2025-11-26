@@ -302,6 +302,15 @@ class ToolsHandler {
 			);
 		}
 
+		// Unwrap arguments if schema was transformed from flattened to object format
+		$tool_metadata = $tool->get_metadata();
+		$input_wrapped = ! empty( $tool_metadata['_input_schema_transformed'] );
+		if ( $input_wrapped ) {
+			// Unwrap: {input: "value"} → "value"
+			$input_wrapper = $tool_metadata['_input_schema_wrapper'] ?? 'input';
+			$args          = is_array( $args ) ? ( $args[ $input_wrapper ] ?? null ) : null;
+		}
+
 		// If ability has no input schema and args is empty, pass null instead
 		$ability_input_schema = $ability->get_input_schema();
 		if ( empty( $ability_input_schema ) && empty( $args ) ) {
@@ -381,6 +390,19 @@ class ToolsHandler {
 						'error_code'     => $result->get_error_code(),
 					),
 				);
+			}
+
+			// Wrap result if output schema was transformed from flattened to object format
+			$output_wrapped = ! empty( $tool_metadata['_output_schema_transformed'] );
+			if ( $output_wrapped ) {
+				// Wrap: "value" → {result: "value"}
+				$output_wrapper = $tool_metadata['_output_schema_wrapper'] ?? 'result';
+				$result         = array( $output_wrapper => $result );
+			}
+
+			// Ensure $result is always an array before adding metadata.
+			if ( ! is_array( $result ) ) {
+				$result = array( 'result' => $result );
 			}
 
 			// Successful execution - add metadata.

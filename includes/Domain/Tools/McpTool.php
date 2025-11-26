@@ -72,6 +72,13 @@ class McpTool {
 	private array $annotations;
 
 	/**
+	 * Internal metadata used by the server (not exposed to MCP clients).
+	 *
+	 * @var array
+	 */
+	private array $metadata;
+
+	/**
 	 * The MCP server instance this tool belongs to.
 	 *
 	 * @var \WP\MCP\Core\McpServer|null
@@ -88,6 +95,7 @@ class McpTool {
 	 * @param string|null $title Optional human-readable name for display.
 	 * @param array|null  $output_schema Optional JSON Schema for output structure.
 	 * @param array       $annotations Optional properties describing tool behavior.
+	 * @param array       $metadata Internal metadata used by the server (not returned to clients).
 	 */
 	public function __construct(
 		string $ability,
@@ -96,7 +104,8 @@ class McpTool {
 		array $input_schema,
 		?string $title = null,
 		?array $output_schema = null,
-		array $annotations = array()
+		array $annotations = array(),
+		array $metadata = array()
 	) {
 		$this->ability       = $ability;
 		$this->name          = $name;
@@ -105,6 +114,7 @@ class McpTool {
 		$this->input_schema  = $input_schema;
 		$this->output_schema = $output_schema;
 		$this->annotations   = $annotations;
+		$this->metadata      = $metadata;
 	}
 
 	/**
@@ -182,6 +192,15 @@ class McpTool {
 	}
 
 	/**
+	 * Get internal metadata for server-side processing.
+	 *
+	 * @return array
+	 */
+	public function get_metadata(): array {
+		return $this->metadata;
+	}
+
+	/**
 	 * Set the tool title.
 	 *
 	 * @param string|null $title The title to set.
@@ -234,6 +253,17 @@ class McpTool {
 	 */
 	public function set_annotations( array $annotations ): void {
 		$this->annotations = $annotations;
+	}
+
+	/**
+	 * Set internal metadata.
+	 *
+	 * @param array $metadata Internal metadata values.
+	 *
+	 * @return void
+	 */
+	public function set_metadata( array $metadata ): void {
+		$this->metadata = $metadata;
 	}
 
 	/**
@@ -330,7 +360,8 @@ class McpTool {
 			$data['inputSchema'] ?? array(),
 			$data['title'] ?? null,
 			$data['outputSchema'] ?? null,
-			$data['annotations'] ?? array()
+			$data['annotations'] ?? array(),
+			$data['_metadata'] ?? array()
 		);
 		$tool->set_mcp_server( $mcp_server );
 

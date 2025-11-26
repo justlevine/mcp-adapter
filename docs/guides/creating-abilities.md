@@ -40,7 +40,7 @@ If not specified, abilities default to `type: 'tool'`.
 wp_register_ability('my-plugin/my-ability', [
     'label' => 'My Ability',
     'description' => 'What this ability does',
-    'input_schema' => [...],      // For tools
+    'input_schema' => [...],      // For tools (supports both object and flattened schemas)
     'output_schema' => [...],     // Optional for tools
     'execute_callback' => 'my_callback',
     'permission_callback' => 'my_permission_check',
@@ -55,6 +55,193 @@ wp_register_ability('my-plugin/my-ability', [
     ]
 ]);
 ```
+
+## Input and Output Schemas
+
+The MCP Adapter supports two schema formats for `input_schema` and `output_schema`:
+
+### Object Schemas (Recommended)
+
+The standard format uses JSON Schema objects with properties:
+
+```php
+'input_schema' => [
+    'type' => 'object',
+    'properties' => [
+        'name' => [
+            'type' => 'string',
+            'description' => 'User name'
+        ],
+        'age' => [
+            'type' => 'number',
+            'minimum' => 0
+        ]
+    ],
+    'required' => ['name']
+]
+```
+
+### Flattened Schemas (Simplified)
+
+For simple single-value inputs, you can use flattened schemas. These are automatically converted to MCP-compatible object format:
+
+```php
+// Simple string input
+'input_schema' => [
+    'type' => 'string',
+    'description' => 'Post type to query',
+    'enum' => ['post', 'page', 'attachment']
+]
+
+// This is automatically transformed to:
+[
+    'type' => 'object',
+    'properties' => [
+        'input' => [
+            'type' => 'string',
+            'description' => 'Post type to query',
+            'enum' => ['post', 'page', 'attachment']
+        ]
+    ],
+    'required' => ['input']
+]
+```
+
+#### Supported Flattened Types
+
+All JSON Schema primitive types are supported:
+- `string` - text values
+- `number` - numeric values (including decimals)
+- `integer` - whole numbers
+- `boolean` - true/false values
+- `array` - lists of values
+
+#### Flattened Schema Examples
+
+```php
+// Number with constraints
+'input_schema' => [
+    'type' => 'number',
+    'description' => 'Maximum number of posts',
+    'minimum' => 1,
+    'maximum' => 100,
+    'default' => 10
+]
+
+// Boolean flag
+'input_schema' => [
+    'type' => 'boolean',
+    'description' => 'Include draft posts'
+]
+
+// Array of strings
+'input_schema' => [
+    'type' => 'array',
+    'description' => 'List of post IDs',
+    'items' => ['type' => 'integer'],
+    'minItems' => 1
+]
+```
+
+### Output Schemas
+
+Output schemas follow the same patterns as input schemas, supporting both object and flattened formats:
+
+#### Object Output Schemas
+
+```php
+'output_schema' => [
+    'type' => 'object',
+    'properties' => [
+        'post_id' => [
+            'type' => 'integer',
+            'description' => 'Created post ID'
+        ],
+        'url' => [
+            'type' => 'string',
+            'description' => 'Post permalink'
+        ],
+        'status' => [
+            'type' => 'string',
+            'description' => 'Post status'
+        ]
+    ]
+]
+```
+
+#### Flattened Output Schemas
+
+For simple single-value outputs, you can use flattened schemas. These are automatically converted to MCP-compatible object format using `"result"` as the wrapper property:
+
+```php
+// Simple string output
+'output_schema' => [
+    'type' => 'string',
+    'description' => 'Generated post slug'
+]
+
+// This is automatically transformed to:
+[
+    'type' => 'object',
+    'properties' => [
+        'result' => [
+            'type' => 'string',
+            'description' => 'Generated post slug'
+        ]
+    ],
+    'required' => ['result']
+]
+```
+
+#### Output Schema Examples
+
+```php
+// Number output
+'output_schema' => [
+    'type' => 'integer',
+    'description' => 'Total number of posts found'
+]
+
+// Boolean output
+'output_schema' => [
+    'type' => 'boolean',
+    'description' => 'Whether the operation succeeded'
+]
+
+// Array output
+'output_schema' => [
+    'type' => 'array',
+    'description' => 'List of post titles',
+    'items' => ['type' => 'string']
+]
+```
+
+**Important**: When using flattened output schemas, your callback should return the unwrapped value directly. The adapter automatically wraps it in `{result: <value>}` for MCP clients:
+
+```php
+// With flattened output schema: ['type' => 'string']
+'execute_callback' => function($input) {
+    return 'my-post-slug';  // Return unwrapped value
+}
+
+// MCP client receives: {result: 'my-post-slug'}
+```
+
+#### When to Use Each Format
+
+**Use Object Schemas when:**
+- Your ability accepts/returns multiple parameters or fields
+- You need complex validation or nested structures
+- You want descriptive parameter names
+- Your output contains multiple related values (e.g., `{post_id, url, status}`)
+
+**Use Flattened Schemas when:**
+- Your ability accepts/returns a single, simple value
+- The input/output is straightforward (e.g., a string, number, boolean, or array)
+- You want to simplify the API for basic operations
+- Your output is a single primitive value (e.g., a count, a slug, a boolean flag)
+
+**Note**: All schema metadata (descriptions, constraints, enums, etc.) is preserved during the automatic transformation from flattened to object format. Input schemas use `"input"` as the wrapper property, while output schemas use `"result"`.
 
 ## MCP Annotations
 
@@ -310,6 +497,49 @@ wp_register_ability('my-plugin/create-post', [
     ]
 ]);
 ```
+
+#### Tool with Flattened Schemas
+
+For simple tools that accept and return single values, you can use flattened schemas:
+
+```php
+wp_register_ability('my-plugin/count-posts', [
+    'label' => 'Count Posts',
+    'description' => 'Count posts of a specific type',
+    'input_schema' => [
+        'type' => 'string',
+        'description' => 'Post type to count',
+        'enum' => ['post', 'page', 'attachment']
+    ],
+    'output_schema' => [
+        'type' => 'integer',
+        'description' => 'Total number of posts found'
+    ],
+    'execute_callback' => function($input) {
+        // $input is the unwrapped string value (e.g., 'post')
+        $count = wp_count_posts($input);
+        // Return unwrapped integer value
+        return $count->publish;
+    },
+    'permission_callback' => function() {
+        return current_user_can('read');
+    },
+    'meta' => [
+        'annotations' => [
+            'readonly' => true,
+            'idempotent' => false  // Count may change over time
+        ],
+        'mcp' => [
+            'public' => true
+        ]
+    ]
+]);
+```
+
+**Note**: With flattened schemas:
+- The callback receives the unwrapped input value directly (e.g., `'post'` instead of `['input' => 'post']`)
+- The callback should return the unwrapped output value (e.g., `42` instead of `['result' => 42]`)
+- The adapter automatically handles wrapping/unwrapping for MCP clients
 
 ## Creating Resources
 
