@@ -421,7 +421,48 @@ final class ExecuteAbilityAbilityTest extends TestCase {
 		$this->assertEquals( 'object', $output_schema['type'] );
 		$this->assertArrayHasKey( 'properties', $output_schema );
 		$this->assertArrayHasKey( 'success', $output_schema['properties'] );
+		$this->assertArrayHasKey( 'data', $output_schema['properties'] );
+		$this->assertArrayHasKey( 'error', $output_schema['properties'] );
 		$this->assertEquals( array( 'success' ), $output_schema['required'] );
+	}
+
+	/**
+	 * Test that output schema data property has type defined to prevent PHP warnings.
+	 *
+	 * Regression test for https://github.com/WordPress/mcp-adapter/issues/109
+	 * WordPress REST API expects 'type' key to be defined in schema properties.
+	 */
+	public function test_output_schema_data_property_has_type_defined(): void {
+		$ability       = wp_get_ability( 'mcp-adapter/execute-ability' );
+		$output_schema = $ability->get_output_schema();
+
+		$data_schema = $output_schema['properties']['data'];
+
+		// Verify 'type' key exists (fixes PHP Warning: Undefined array key "type")
+		$this->assertArrayHasKey( 'type', $data_schema, 'Data property must have type defined to prevent PHP warnings in REST API' );
+	}
+
+	/**
+	 * Test that output schema data property accepts any JSON type for flexibility.
+	 *
+	 * The data property can return different types depending on the executed ability,
+	 * so it must accept objects, arrays, strings, numbers, booleans, and null.
+	 */
+	public function test_output_schema_data_property_accepts_all_json_types(): void {
+		$ability       = wp_get_ability( 'mcp-adapter/execute-ability' );
+		$output_schema = $ability->get_output_schema();
+
+		$data_schema = $output_schema['properties']['data'];
+		$type        = $data_schema['type'];
+
+		// Type should be an array for union types (JSON Schema 2020-12)
+		$this->assertIsArray( $type, 'Data type should be an array to support multiple types' );
+
+		// Verify all JSON primitive types are allowed
+		$expected_types = array( 'object', 'array', 'string', 'number', 'integer', 'boolean', 'null' );
+		foreach ( $expected_types as $expected_type ) {
+			$this->assertContains( $expected_type, $type, "Data property should accept type: {$expected_type}" );
+		}
 	}
 
 	public function test_ability_has_correct_annotations(): void {
