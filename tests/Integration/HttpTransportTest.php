@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for MCP HTTP Transport - MCP 2025-06-18 Streamable HTTP Compliance
+ * Tests for MCP HTTP Transport behavior (MCP 2025-11-25 baseline).
  *
  * @package WP\MCP\Tests
  */
@@ -23,13 +23,14 @@ use WP\MCP\Transport\HttpTransport;
 use WP\MCP\Transport\Infrastructure\McpTransportContext;
 use WP_REST_Request;
 use WP_REST_Response;
+use WP_Error;
 
 /**
- * Test MCP HTTP Transport compliance with MCP 2025-06-18 Streamable HTTP specification
+ * Test MCP HTTP Transport behavior against the MCP 2025-11-25 baseline.
  *
  * Tests cover:
  * - POST requests with JSON-RPC messages
- * - GET requests for SSE streaming
+ * - GET requests for SSE streaming (currently returns 405)
  * - DELETE requests for session termination
  * - OPTIONS requests for CORS preflight
  * - Session management
@@ -82,7 +83,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -125,7 +126,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -150,9 +151,9 @@ final class HttpTransportTest extends TestCase {
 
 		$response = $this->transport->handle_request( $request );
 
-		// Notifications return 200 with null body in JSON-RPC over HTTP
+		// Notifications return HTTP 202 Accepted with no body per MCP spec
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
-		$this->assertEquals( 200, $response->get_status() );
+		$this->assertEquals( 202, $response->get_status() );
 		$this->assertNull( $response->get_data() );
 	}
 
@@ -164,7 +165,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -279,7 +280,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -345,7 +346,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -409,7 +410,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -442,7 +443,7 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 					'clientInfo'      => array(
 						'name'    => 'test-client',
 						'version' => '1.0.0',
@@ -468,15 +469,15 @@ final class HttpTransportTest extends TestCase {
 		$response = $this->transport->handle_request( $request );
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
-		$this->assertEquals( 200, $response->get_status() );
 
 		$data = $response->get_data();
-		// Debug: check what we actually get
 		if ( ! isset( $data['result'] ) ) {
-			// If it's an error, that's expected since session might not be properly created
+			// Session not found returns HTTP 404 per MCP spec
+			$this->assertEquals( 404, $response->get_status() );
 			$this->assertArrayHasKey( 'error', $data );
 			$this->assertStringContainsString( 'session', strtolower( $data['error']['message'] ) );
 		} else {
+			$this->assertEquals( 200, $response->get_status() );
 			$this->assertArrayHasKey( 'result', $data );
 		}
 	}
@@ -495,11 +496,11 @@ final class HttpTransportTest extends TestCase {
 		$response = $this->transport->handle_request( $request );
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
-		$this->assertEquals( 200, $response->get_status() );
+		$this->assertEquals( 404, $response->get_status() );
 
 		$data = $response->get_data();
 		$this->assertArrayHasKey( 'error', $data );
-		$this->assertEquals( McpErrorFactory::INVALID_PARAMS, $data['error']['code'] );
+		$this->assertEquals( McpErrorFactory::SESSION_NOT_FOUND, $data['error']['code'] );
 		$this->assertStringContainsString( 'Invalid or expired session', $data['error']['message'] );
 	}
 
@@ -606,7 +607,7 @@ final class HttpTransportTest extends TestCase {
 				'request_router'                => $this->context->request_router,
 				'error_handler'                 => new DummyErrorHandler(), // Add error_handler
 				'transport_permission_callback' => static function () {
-					return new \WP_Error( 'permission_denied', 'Custom permission error' );
+					return new WP_Error( 'permission_denied', 'Custom permission error' );
 				},
 			)
 		);
@@ -949,11 +950,11 @@ final class HttpTransportTest extends TestCase {
 				'id'      => 1,
 				'method'  => 'initialize',
 				'params'  => array(
-					'protocolVersion' => '2025-06-18',
+					'protocolVersion' => '2025-11-25',
 				),
 			)
 		);
-		$request->set_header( 'MCP-Protocol-Version', '2025-06-18' );
+		$request->set_header( 'MCP-Protocol-Version', '2025-11-25' );
 
 		$response = $this->transport->handle_request( $request );
 
@@ -974,7 +975,7 @@ final class HttpTransportTest extends TestCase {
 
 		$data = $response->get_data();
 		$this->assertArrayHasKey( 'error', $data );
-		$this->assertEquals( McpErrorFactory::INTERNAL_ERROR, $data['error']['code'] );
+		$this->assertEquals( McpErrorFactory::INVALID_REQUEST, $data['error']['code'] );
 		$this->assertStringContainsString( 'Method not allowed', $data['error']['message'] );
 	}
 
