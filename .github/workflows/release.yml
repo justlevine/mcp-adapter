@@ -1,5 +1,9 @@
 name: Upload Package on Release
 
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
   # The concurrency group contains the workflow name and the branch name for pull requests
@@ -15,6 +19,9 @@ jobs:
   tag:
     name: Upload New Release
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # Required to clone the repo and to upload the release asset.
 
     steps:
       - name: Checkout repository

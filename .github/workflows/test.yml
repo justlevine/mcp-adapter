@@ -1,5 +1,9 @@
 name: Test
 
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
 on:
   workflow_dispatch:
   push:
@@ -33,7 +37,7 @@ jobs:
     name: Run PHPCS coding standards checks
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: read # Required to clone the repo.
     timeout-minutes: 20
 
     steps:
@@ -92,7 +96,7 @@ jobs:
     name: Run PHP static analysis
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: read # Required to clone the repo.
     timeout-minutes: 20
 
     steps:
@@ -171,6 +175,9 @@ jobs:
   phpunit:
     name: Test PHP ${{ matrix.php }} WP ${{ matrix.wp }}${{ matrix.coverage && ' with coverage' || '' }}
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read # Required to clone the repo.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
