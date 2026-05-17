@@ -31,7 +31,7 @@ Please see [SECURITY.md] (@TODO).
 
 ### Prerequisites
 
-- Node.js: 20.x (NVM recommended)
+- Node.js: 22.x (NVM recommended)
 - Docker
 - Git
 - Composer: (if you prefer to run the Composer tools locally)

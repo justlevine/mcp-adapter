@@ -4,7 +4,7 @@ This guide explains how to run and write tests for the MCP Adapter using `wp-env
 
 ## Prerequisites
 
-- Node.js 20.x (NVM recommended)
+- Node.js 22.x (NVM recommended)
 - Docker
 - Git
 
@@ -137,7 +137,7 @@ npm run wp-env:test start
 
 - **Class not found**: This typically occurs after adding new classes, pulling changes, or switching branches. Regenerate the Composer autoloader to resolve:
   ```bash
-  npm run wp-env:test run --env-cwd=wp-content/plugins/mcp-adapter/ composer dump-autoload
+  npm run wp-env:test run cli --env-cwd=wp-content/plugins/mcp-adapter/ composer dump-autoload
   ```
   The `--env-cwd` flag sets the working directory inside the Docker container to ensure Composer operates on the plugin's `composer.json`.
 
@@ -146,9 +146,9 @@ npm run wp-env:test start
 
 ### Accessing the Test Environment
 
-- WordPress site: http://localhost:8888
-- Admin dashboard: http://localhost:8888/wp-admin/ (admin/password)
-- Run WP-CLI commands: `npm run wp-env:test run --env-cwd=wp-content/plugins/mcp-adapter/ YOUR_COMMAND`
+- WordPress site: http://localhost:8889
+- Admin dashboard: http://localhost:8889/wp-admin/ (admin/password)
+- Run WP-CLI commands: `npm run wp-env:test run cli --env-cwd=wp-content/plugins/mcp-adapter/ YOUR_COMMAND`
 
 ## Continuous Integration
 
