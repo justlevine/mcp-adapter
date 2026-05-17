@@ -20,7 +20,6 @@
 		"mcp-adapter.php"
 	],
 	"scripts": {
-		"build": "wp-env run tests-cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ composer install --no-dev --optimize-autoloader",
 		"format": "wp-scripts format",
 		"lint:php": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ composer run-script lint",
 		"lint:php:fix": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ composer run-script format",
