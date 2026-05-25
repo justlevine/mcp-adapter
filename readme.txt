@@ -1,7 +1,7 @@
 === MCP Adapter ===
 Contributors:      wordpressdotorg
 Tags:              mcp, ai, abilities-api, model-context-protocol
-Requires at least: 6.8
+Requires at least: 6.9
 Tested up to:      7.0
 Requires PHP:      7.4
 Stable tag:        0.5.0
@@ -30,12 +30,6 @@ The MCP Adapter bridges WordPress's Abilities API with the [Model Context Protoc
 The primary installation method is via Composer:
 
 `composer require wordpress/mcp-adapter`
-
-On WordPress 6.8, you must also install the Abilities API separately:
-
-`composer require wordpress/abilities-api wordpress/mcp-adapter`
-
-On WordPress 6.9 and later, the Abilities API is included in WordPress core and does not need to be installed separately.
 
 The adapter can also be installed as a standard WordPress plugin from a GitHub release or a Git clone. See the [README](https://github.com/WordPress/mcp-adapter#installation) for detailed instructions.
 

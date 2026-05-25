@@ -181,24 +181,9 @@ Individual server management with comprehensive configuration:
 
 ## Dependencies
 
-### Required Dependencies
-
 - **PHP**: >= 7.4
-- **WordPress**: >= 6.8 (6.9+ recommended)
-- **[WordPress Abilities API](https://make.wordpress.org/core/2025/11/10/abilities-api-in-wordpress-6-9/)**: Included in WordPress core since 6.9. For WordPress 6.8, install the [Abilities API plugin](https://github.com/WordPress/abilities-api) separately (note: the plugin repository was archived in February 2026).
+- **WordPress**: >= 6.9+
 - **[php-mcp-schema](https://github.com/WordPress/php-mcp-schema)** (^0.1.0): Typed DTOs for MCP protocol types (MCP 2025-11-25)
-
-### WordPress Abilities API Integration
-
-Since WordPress 6.9, the [Abilities API](https://make.wordpress.org/core/2025/11/10/abilities-api-in-wordpress-6-9/) is a core API and does not require a separate plugin.
-
-The Abilities API provides:
-
-- Standardized ability registration (`wp_register_ability()`)
-- Ability retrieval and management (`wp_get_ability()`)
-- Schema definition for inputs and outputs
-- Permission callback system
-- Execute callback system
 
 ## Installation
 
@@ -209,8 +194,6 @@ The MCP Adapter is designed to be installed as a Composer package. This is the p
 ```bash
 composer require wordpress/mcp-adapter
 ```
-
-> **Note:** On WordPress 6.8, you must also install the Abilities API separately: `composer require wordpress/abilities-api wordpress/mcp-adapter`. On WordPress 6.9+, the Abilities API is built into core and does not need to be installed.
 
 #### Using Jetpack Autoloader (Highly Recommended)
 
@@ -275,8 +258,6 @@ This will give you the latest development version from the `trunk` branch with a
   // ... more config ...
 }
 ```
-
-> **Note:** On WordPress 6.8, also add `"WordPress/abilities-api"` to the plugins array. On WordPress 6.9+, the Abilities API is included in core.
 
 ### Using MCP Adapter in Your Plugin
 
